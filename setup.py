@@ -11,9 +11,9 @@ setup(
     author='Kornel Csernai',
     author_email='cskornel@gmail.com',
     install_requires=[
-        'aiohttp>=2.2,<=3',
+        'aiohttp>=2.2,<4',
         'aiofiles==0.3',
-        'async_timeout>=1.2,<=2',
+        'async_timeout>=1.2,<3',
         'sortedcontainers>=1.5,<2',
     ],
     packages=find_packages(),
