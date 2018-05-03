@@ -22,12 +22,12 @@ import asyncio
 import gdax
 
 async def main():
-    trader = gdax.trader.Trader(product_id='BTC-USD')
-    res = await asyncio.gather(
-        trader.get_products(),
-        trader.get_product_ticker(),
-        trader.get_time(),
-    )
+    async with gdax.trader.Trader(product_id='BTC-USD') as trader:
+        res = await asyncio.gather(
+            trader.get_products(),
+            trader.get_product_ticker(),
+            trader.get_time(),
+        )
     print(res)
 
 if __name__ == "__main__":
@@ -41,12 +41,12 @@ import asyncio
 import gdax
 
 async def main():
-    trader = gdax.trader.Trader(
+    async with gdax.trader.Trader(
         product_id='BTC-USD',
         api_key='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         api_secret='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa==',
-        passphrase='aaaaaaaaaaa')
-    res = await trader.get_account()
+        passphrase='aaaaaaaaaaa') as trader:
+        res = await trader.get_account()
     print(res)
 
     res = await trader.buy(type='limit', size='0.01', price='2500.12')
