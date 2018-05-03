@@ -2,12 +2,11 @@ import base64
 import asyncio
 from decimal import Decimal
 
-from asynctest import patch, CoroutineMock
+from asynctest import patch, CoroutineMock, MagicMock, PropertyMock
 import pytest
 
 import gdax
-from tests.helpers import AsyncContextManagerMock, \
-    AsyncContextManagerMockPagination, generate_id
+from tests.helpers import generate_id
 
 
 @pytest.yield_fixture
@@ -24,683 +23,584 @@ def event_loop():
     res._close()
 
 
-@patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+@patch('aiohttp.ClientSession.get', new_callable=MagicMock)
 @pytest.mark.usefixtures('event_loop')
 @pytest.mark.asyncio
 class TestPublicClient:
-    def init(self):
-        self.client = gdax.trader.Trader()
-
     async def test_get_products(self, mock_get):
-        products = [
-            {
-              "id": "LTC-EUR",
-              "base_currency": "LTC",
-              "quote_currency": "EUR",
-              "base_min_size": "0.01",
-              "base_max_size": "1000000",
-              "quote_increment": "0.01",
-              "display_name": "LTC/EUR"
-            },
-            {
-              "id": "LTC-BTC",
-              "base_currency": "LTC",
-              "quote_currency": "BTC",
-              "base_min_size": "0.01",
-              "base_max_size": "1000000",
-              "quote_increment": "0.00001",
-              "display_name": "LTC/BTC"
-            },
-            {
-              "id": "BTC-GBP",
-              "base_currency": "BTC",
-              "quote_currency": "GBP",
-              "base_min_size": "0.01",
-              "base_max_size": "250",
-              "quote_increment": "0.01",
-              "display_name": "BTC/GBP"
-            },
-            {
-              "id": "BTC-EUR",
-              "base_currency": "BTC",
-              "quote_currency": "EUR",
-              "base_min_size": "0.01",
-              "base_max_size": "250",
-              "quote_increment": "0.01",
-              "display_name": "BTC/EUR"
-            },
-            {
-              "id": "ETH-EUR",
-              "base_currency": "ETH",
-              "quote_currency": "EUR",
-              "base_min_size": "0.01",
-              "base_max_size": "5000",
-              "quote_increment": "0.01",
-              "display_name": "ETH/EUR"
-            },
-            {
-              "id": "ETH-BTC",
-              "base_currency": "ETH",
-              "quote_currency": "BTC",
-              "base_min_size": "0.01",
-              "base_max_size": "5000",
-              "quote_increment": "0.00001",
-              "display_name": "ETH/BTC"
-            },
-            {
-              "id": "LTC-USD",
-              "base_currency": "LTC",
-              "quote_currency": "USD",
-              "base_min_size": "0.01",
-              "base_max_size": "1000000",
-              "quote_increment": "0.01",
-              "display_name": "LTC/USD"
-            },
-            {
-              "id": "BTC-USD",
-              "base_currency": "BTC",
-              "quote_currency": "USD",
-              "base_min_size": "0.01",
-              "base_max_size": "250",
-              "quote_increment": "0.01",
-              "display_name": "BTC/USD"
-            },
-            {
-              "id": "ETH-USD",
-              "base_currency": "ETH",
-              "quote_currency": "USD",
-              "base_min_size": "0.01",
-              "base_max_size": "5000",
-              "quote_increment": "0.01",
-              "display_name": "ETH/USD"
-            }
-        ]
-        expected_products = [
-            {
-              "id": "LTC-EUR",
-              "base_currency": "LTC",
-              "quote_currency": "EUR",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("1000000"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "LTC/EUR"
-            },
-            {
-              "id": "LTC-BTC",
-              "base_currency": "LTC",
-              "quote_currency": "BTC",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("1000000"),
-              "quote_increment": Decimal("0.00001"),
-              "display_name": "LTC/BTC"
-            },
-            {
-              "id": "BTC-GBP",
-              "base_currency": "BTC",
-              "quote_currency": "GBP",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("250"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "BTC/GBP"
-            },
-            {
-              "id": "BTC-EUR",
-              "base_currency": "BTC",
-              "quote_currency": "EUR",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("250"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "BTC/EUR"
-            },
-            {
-              "id": "ETH-EUR",
-              "base_currency": "ETH",
-              "quote_currency": "EUR",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("5000"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "ETH/EUR"
-            },
-            {
-              "id": "ETH-BTC",
-              "base_currency": "ETH",
-              "quote_currency": "BTC",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("5000"),
-              "quote_increment": Decimal("0.00001"),
-              "display_name": "ETH/BTC"
-            },
-            {
-              "id": "LTC-USD",
-              "base_currency": "LTC",
-              "quote_currency": "USD",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("1000000"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "LTC/USD"
-            },
-            {
-              "id": "BTC-USD",
-              "base_currency": "BTC",
-              "quote_currency": "USD",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("250"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "BTC/USD"
-            },
-            {
-              "id": "ETH-USD",
-              "base_currency": "ETH",
-              "quote_currency": "USD",
-              "base_min_size": Decimal("0.01"),
-              "base_max_size": Decimal("5000"),
-              "quote_increment": Decimal("0.01"),
-              "display_name": "ETH/USD"
-            }
-        ]
-        mock_get.return_value.aenter.json = CoroutineMock(
-            return_value=products)
-        self.init()
-        r = await self.client.get_products()
-        assert r == expected_products
+        async with gdax.trader.Trader() as client:
+            products = [
+                {
+                    "id": "LTC-EUR",
+                    "base_currency": "LTC",
+                    "quote_currency": "EUR",
+                    "base_min_size": "0.01",
+                    "base_max_size": "1000000",
+                    "quote_increment": "0.01",
+                    "display_name": "LTC/EUR"
+                },
+                {
+                    "id": "LTC-BTC",
+                    "base_currency": "LTC",
+                    "quote_currency": "BTC",
+                    "base_min_size": "0.01",
+                    "base_max_size": "1000000",
+                    "quote_increment": "0.00001",
+                    "display_name": "LTC/BTC"
+                },
+                {
+                    "id": "BTC-GBP",
+                    "base_currency": "BTC",
+                    "quote_currency": "GBP",
+                    "base_min_size": "0.01",
+                    "base_max_size": "250",
+                    "quote_increment": "0.01",
+                    "display_name": "BTC/GBP"
+                },
+                {
+                    "id": "BTC-EUR",
+                    "base_currency": "BTC",
+                    "quote_currency": "EUR",
+                    "base_min_size": "0.01",
+                    "base_max_size": "250",
+                    "quote_increment": "0.01",
+                    "display_name": "BTC/EUR"
+                },
+                {
+                    "id": "ETH-EUR",
+                    "base_currency": "ETH",
+                    "quote_currency": "EUR",
+                    "base_min_size": "0.01",
+                    "base_max_size": "5000",
+                    "quote_increment": "0.01",
+                    "display_name": "ETH/EUR"
+                },
+                {
+                    "id": "ETH-BTC",
+                    "base_currency": "ETH",
+                    "quote_currency": "BTC",
+                    "base_min_size": "0.01",
+                    "base_max_size": "5000",
+                    "quote_increment": "0.00001",
+                    "display_name": "ETH/BTC"
+                },
+                {
+                    "id": "LTC-USD",
+                    "base_currency": "LTC",
+                    "quote_currency": "USD",
+                    "base_min_size": "0.01",
+                    "base_max_size": "1000000",
+                    "quote_increment": "0.01",
+                    "display_name": "LTC/USD"
+                },
+                {
+                    "id": "BTC-USD",
+                    "base_currency": "BTC",
+                    "quote_currency": "USD",
+                    "base_min_size": "0.01",
+                    "base_max_size": "250",
+                    "quote_increment": "0.01",
+                    "display_name": "BTC/USD"
+                },
+                {
+                    "id": "ETH-USD",
+                    "base_currency": "ETH",
+                    "quote_currency": "USD",
+                    "base_min_size": "0.01",
+                    "base_max_size": "5000",
+                    "quote_increment": "0.01",
+                    "display_name": "ETH/USD"
+                }
+            ]
+            expected_products = [
+                {
+                    "id": "LTC-EUR",
+                    "base_currency": "LTC",
+                    "quote_currency": "EUR",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("1000000"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "LTC/EUR"
+                },
+                {
+                    "id": "LTC-BTC",
+                    "base_currency": "LTC",
+                    "quote_currency": "BTC",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("1000000"),
+                    "quote_increment": Decimal("0.00001"),
+                    "display_name": "LTC/BTC"
+                },
+                {
+                    "id": "BTC-GBP",
+                    "base_currency": "BTC",
+                    "quote_currency": "GBP",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("250"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "BTC/GBP"
+                },
+                {
+                    "id": "BTC-EUR",
+                    "base_currency": "BTC",
+                    "quote_currency": "EUR",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("250"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "BTC/EUR"
+                },
+                {
+                    "id": "ETH-EUR",
+                    "base_currency": "ETH",
+                    "quote_currency": "EUR",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("5000"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "ETH/EUR"
+                },
+                {
+                    "id": "ETH-BTC",
+                    "base_currency": "ETH",
+                    "quote_currency": "BTC",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("5000"),
+                    "quote_increment": Decimal("0.00001"),
+                    "display_name": "ETH/BTC"
+                },
+                {
+                    "id": "LTC-USD",
+                    "base_currency": "LTC",
+                    "quote_currency": "USD",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("1000000"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "LTC/USD"
+                },
+                {
+                    "id": "BTC-USD",
+                    "base_currency": "BTC",
+                    "quote_currency": "USD",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("250"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "BTC/USD"
+                },
+                {
+                    "id": "ETH-USD",
+                    "base_currency": "ETH",
+                    "quote_currency": "USD",
+                    "base_min_size": Decimal("0.01"),
+                    "base_max_size": Decimal("5000"),
+                    "quote_increment": Decimal("0.01"),
+                    "display_name": "ETH/USD"
+                }
+            ]
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(
+                return_value=products)
+            r = await client.get_products()
+            assert r == expected_products
 
     async def test_get_product_ticker(self, mock_get):
-        ticker = {
-            "trade_id": 17429442,
-            "price": "2483.64000000",
-            "size": "0.80809483",
-            "bid": "2481.18",
-            "ask": "2483.61",
-            "volume": "13990.13083225",
-            "time": "2017-06-26T06:29:06.993000Z"
-        }
-        expected_ticker = {
-            "trade_id": 17429442,
-            "price": Decimal("2483.64000000"),
-            "size": Decimal("0.80809483"),
-            "bid": Decimal("2481.18"),
-            "ask": Decimal("2483.61"),
-            "volume": Decimal("13990.13083225"),
-            "time": "2017-06-26T06:29:06.993000Z"
-        }
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=ticker)
-        self.init()
-        r = await self.client.get_product_ticker('BTC-USD')
-        assert r == expected_ticker
+        async with gdax.trader.Trader() as client:
+            ticker = {
+                "trade_id": 17429442,
+                "price": "2483.64000000",
+                "size": "0.80809483",
+                "bid": "2481.18",
+                "ask": "2483.61",
+                "volume": "13990.13083225",
+                "time": "2017-06-26T06:29:06.993000Z"
+            }
+            expected_ticker = {
+                "trade_id": 17429442,
+                "price": Decimal("2483.64000000"),
+                "size": Decimal("0.80809483"),
+                "bid": Decimal("2481.18"),
+                "ask": Decimal("2483.61"),
+                "volume": Decimal("13990.13083225"),
+                "time": "2017-06-26T06:29:06.993000Z"
+            }
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=ticker)
+            r = await client.get_product_ticker('BTC-USD')
+            assert r == expected_ticker
 
     async def test_get_product_trades(self, mock_get):
-        trades = [
-          {
-            "time": "2017-06-26T06:32:53.79Z",
-            "trade_id": 17429512,
-            "price": "2479.98000000",
-            "size": "0.01997424",
-            "side": "sell"
-          },
-          {
-            "time": "2017-06-26T06:32:24.113Z",
-            "trade_id": 17429508,
-            "price": "2479.97000000",
-            "size": "0.54415961",
-            "side": "buy"
-          }
-        ]
-        expected_trades = [
-          {
-            "time": "2017-06-26T06:32:53.79Z",
-            "trade_id": 17429512,
-            "price": Decimal("2479.98000000"),
-            "size": Decimal("0.01997424"),
-            "side": "sell"
-          },
-          {
-            "time": "2017-06-26T06:32:24.113Z",
-            "trade_id": 17429508,
-            "price": Decimal("2479.97000000"),
-            "size": Decimal("0.54415961"),
-            "side": "buy"
-          }
-        ]
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=trades)
-        self.init()
-        r = await self.client.get_product_trades('BTC-USD')
-        assert r == expected_trades
+        async with gdax.trader.Trader() as client:
+            trades = [
+                {
+                    "time": "2017-06-26T06:32:53.79Z",
+                    "trade_id": 17429512,
+                    "price": "2479.98000000",
+                    "size": "0.01997424",
+                    "side": "sell"
+                },
+                {
+                    "time": "2017-06-26T06:32:24.113Z",
+                    "trade_id": 17429508,
+                    "price": "2479.97000000",
+                    "size": "0.54415961",
+                    "side": "buy"
+                }
+            ]
+            expected_trades = [
+                {
+                    "time": "2017-06-26T06:32:53.79Z",
+                    "trade_id": 17429512,
+                    "price": Decimal("2479.98000000"),
+                    "size": Decimal("0.01997424"),
+                    "side": "sell"
+                },
+                {
+                    "time": "2017-06-26T06:32:24.113Z",
+                    "trade_id": 17429508,
+                    "price": Decimal("2479.97000000"),
+                    "size": Decimal("0.54415961"),
+                    "side": "buy"
+                }
+            ]
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=trades)
+            r = await client.get_product_trades('BTC-USD')
+            assert r == expected_trades
 
     async def test_get_product_order_book(self, mock_get):
-        orderbook = {
-          "sequence": 3424558479,
-          "bids": [
-            [
-              "2483.8",
-              "0.01",
-              1
-            ]
-          ],
-          "asks": [
-            [
-              "2486.28",
-              "0.01455",
-              1
-            ]
-          ]
-        }
+        async with gdax.trader.Trader() as client:
+            orderbook = {
+                "sequence": 3424558479,
+                "bids": [
+                    [
+                        "2483.8",
+                        "0.01",
+                        1
+                    ]
+                ],
+                "asks": [
+                    [
+                        "2486.28",
+                        "0.01455",
+                        1
+                    ]
+                ]
+            }
 
-        expected_orderbook = {
-          "sequence": 3424558479,
-          "bids": [
-            [
-              Decimal("2483.8"),
-              Decimal("0.01"),
-              1
-            ]
-          ],
-          "asks": [
-            [
-              Decimal("2486.28"),
-              Decimal("0.01455"),
-              1
-            ]
-          ]
-        }
-        mock_get.return_value.aenter.json = CoroutineMock(
-            return_value=orderbook)
-        self.init()
-        r = await self.client.get_product_order_book('BTC-USD')
-        assert r == expected_orderbook
+            expected_orderbook = {
+                "sequence": 3424558479,
+                "bids": [
+                    [
+                        Decimal("2483.8"),
+                        Decimal("0.01"),
+                        1
+                    ]
+                ],
+                "asks": [
+                    [
+                        Decimal("2486.28"),
+                        Decimal("0.01455"),
+                        1
+                    ]
+                ]
+            }
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(
+                return_value=orderbook)
+            r = await client.get_product_order_book('BTC-USD')
+            assert r == expected_orderbook
 
-        orderbook = {
-          "sequence": 3424562473,
-          "bids": [
-            [
-              "2483.99",
-              "0.01",
-              1
-            ],
-            [
-              "2483.98",
-              "0.9798",
-              5
-            ]
-          ],
-          "asks": [
-            [
-              "2486.48",
-              "1.65567931",
-              1
-            ],
-            [
-              "2487.72",
-              "0.03",
-              3
-            ]
-          ]
-        }
-        expected_orderbook = {
-          "sequence": 3424562473,
-          "bids": [
-            [
-              Decimal("2483.99"),
-              Decimal("0.01"),
-              1
-            ],
-            [
-              Decimal("2483.98"),
-              Decimal("0.9798"),
-              5
-            ]
-          ],
-          "asks": [
-            [
-              Decimal("2486.48"),
-              Decimal("1.65567931"),
-              1
-            ],
-            [
-              Decimal("2487.72"),
-              Decimal("0.03"),
-              3
-            ]
-          ]
-        }
-        mock_get.return_value.aenter.json = CoroutineMock(
-            return_value=orderbook)
-        r = await self.client.get_product_order_book('BTC-USD', level=2)
-        assert r == expected_orderbook
+            orderbook = {
+                "sequence": 3424562473,
+                "bids": [
+                    [
+                        "2483.99",
+                        "0.01",
+                        1
+                    ],
+                    [
+                        "2483.98",
+                        "0.9798",
+                        5
+                    ]
+                ],
+                "asks": [
+                    [
+                        "2486.48",
+                        "1.65567931",
+                        1
+                    ],
+                    [
+                        "2487.72",
+                        "0.03",
+                        3
+                    ]
+                ]
+            }
+            expected_orderbook = {
+                "sequence": 3424562473,
+                "bids": [
+                    [
+                        Decimal("2483.99"),
+                        Decimal("0.01"),
+                        1
+                    ],
+                    [
+                        Decimal("2483.98"),
+                        Decimal("0.9798"),
+                        5
+                    ]
+                ],
+                "asks": [
+                    [
+                        Decimal("2486.48"),
+                        Decimal("1.65567931"),
+                        1
+                    ],
+                    [
+                        Decimal("2487.72"),
+                        Decimal("0.03"),
+                        3
+                    ]
+                ]
+            }
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(
+                return_value=orderbook)
+            r = await client.get_product_order_book('BTC-USD', level=2)
+            assert r == expected_orderbook
 
-        id1, id2, id3, id4 = (generate_id() for _ in range(4))
-        orderbook = {
-          "sequence": 3424562473,
-          "bids": [
-            [
-              "2483.99",
-              "0.01",
-              id1
-            ],
-            [
-              "2483.98",
-              "0.9798",
-              id2
-            ]
-          ],
-          "asks": [
-            [
-              "2486.48",
-              "1.65567931",
-              id3
-            ],
-            [
-              "2487.72",
-              "0.03",
-              id4
-            ]
-          ]
-        }
-        expected_orderbook = {
-          "sequence": 3424562473,
-          "bids": [
-            [
-              Decimal("2483.99"),
-              Decimal("0.01"),
-              id1
-            ],
-            [
-              Decimal("2483.98"),
-              Decimal("0.9798"),
-              id2
-            ]
-          ],
-          "asks": [
-            [
-              Decimal("2486.48"),
-              Decimal("1.65567931"),
-              id3
-            ],
-            [
-              Decimal("2487.72"),
-              Decimal("0.03"),
-              id4
-            ]
-          ]
-        }
-        mock_get.return_value.aenter.json = CoroutineMock(
-            return_value=orderbook)
-        r = await self.client.get_product_order_book('BTC-USD', level=3)
-        assert r == expected_orderbook
+            id1, id2, id3, id4 = (generate_id() for _ in range(4))
+            orderbook = {
+                "sequence": 3424562473,
+                "bids": [
+                    [
+                        "2483.99",
+                        "0.01",
+                        id1
+                    ],
+                    [
+                        "2483.98",
+                        "0.9798",
+                        id2
+                    ]
+                ],
+                "asks": [
+                    [
+                        "2486.48",
+                        "1.65567931",
+                        id3
+                    ],
+                    [
+                        "2487.72",
+                        "0.03",
+                        id4
+                    ]
+                ]
+            }
+            expected_orderbook = {
+                "sequence": 3424562473,
+                "bids": [
+                    [
+                        Decimal("2483.99"),
+                        Decimal("0.01"),
+                        id1
+                    ],
+                    [
+                        Decimal("2483.98"),
+                        Decimal("0.9798"),
+                        id2
+                    ]
+                ],
+                "asks": [
+                    [
+                        Decimal("2486.48"),
+                        Decimal("1.65567931"),
+                        id3
+                    ],
+                    [
+                        Decimal("2487.72"),
+                        Decimal("0.03"),
+                        id4
+                    ]
+                ]
+            }
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(
+                return_value=orderbook)
+            r = await client.get_product_order_book('BTC-USD', level=3)
+            assert r == expected_orderbook
 
     async def test_get_product_historic_rates(self, mock_get):
-        rates = [
-              [
-                1498459140,
-                2488.79,
-                2489.96,
-                2489.47,
-                2489.96,
-                9.332934549999997
-              ],
-              [
-                1498459080,
-                2486.24,
-                2489.97,
-                2486.24,
-                2489.96,
-                6.937264829999997
-              ],
+        async with gdax.trader.Trader() as client:
+            rates = [
+                [
+                    1498459140,
+                    2488.79,
+                    2489.96,
+                    2489.47,
+                    2489.96,
+                    9.332934549999997
+                ],
+                [
+                    1498459080,
+                    2486.24,
+                    2489.97,
+                    2486.24,
+                    2489.96,
+                    6.937264829999997
+                ],
             ]
-        expected_rates = [
-              [
-                1498459140,
-                Decimal('2488.79'),
-                Decimal('2489.96'),
-                Decimal('2489.47'),
-                Decimal('2489.96'),
-                Decimal('9.332934549999997')
-              ],
-              [
-                1498459080,
-                Decimal('2486.24'),
-                Decimal('2489.97'),
-                Decimal('2486.24'),
-                Decimal('2489.96'),
-                Decimal('6.937264829999997')
-              ],
+            expected_rates = [
+                [
+                    1498459140,
+                    Decimal('2488.79'),
+                    Decimal('2489.96'),
+                    Decimal('2489.47'),
+                    Decimal('2489.96'),
+                    Decimal('9.332934549999997')
+                ],
+                [
+                    1498459080,
+                    Decimal('2486.24'),
+                    Decimal('2489.97'),
+                    Decimal('2486.24'),
+                    Decimal('2489.96'),
+                    Decimal('6.937264829999997')
+                ],
             ]
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=rates)
-        self.init()
-        r = await self.client.get_product_historic_rates('BTC-USD')
-        assert r == expected_rates
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=rates)
+            r = await client.get_product_historic_rates('BTC-USD')
+            assert r == expected_rates
 
     async def test_get_product_24hr_stats(self, mock_get):
-        stats = {
-          "open": "2586.26000000",
-          "high": "2625.00000000",
-          "low": "2430.05000000",
-          "volume": "14063.90737841",
-          "last": "2489.89000000",
-          "volume_30day": "568418.24079392"
-        }
-        expected_stats = {
-          "open": Decimal("2586.26000000"),
-          "high": Decimal("2625.00000000"),
-          "low": Decimal("2430.05000000"),
-          "volume": Decimal("14063.90737841"),
-          "last": Decimal("2489.89000000"),
-          "volume_30day": Decimal("568418.24079392")
-        }
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=stats)
-        self.init()
-        r = await self.client.get_product_24hr_stats('BTC-USD')
-        assert r == expected_stats
+        async with gdax.trader.Trader() as client:
+            stats = {
+                "open": "2586.26000000",
+                "high": "2625.00000000",
+                "low": "2430.05000000",
+                "volume": "14063.90737841",
+                "last": "2489.89000000",
+                "volume_30day": "568418.24079392"
+            }
+            expected_stats = {
+                "open": Decimal("2586.26000000"),
+                "high": Decimal("2625.00000000"),
+                "low": Decimal("2430.05000000"),
+                "volume": Decimal("14063.90737841"),
+                "last": Decimal("2489.89000000"),
+                "volume_30day": Decimal("568418.24079392")
+            }
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=stats)
+            r = await client.get_product_24hr_stats('BTC-USD')
+            assert r == expected_stats
 
     async def test_get_currencies(self, mock_get):
-        currencies = [
-          {
-            "id": "BTC",
-            "name": "Bitcoin",
-            "min_size": "0.00000001"
-          },
-          {
-            "id": "EUR",
-            "name": "Euro",
-            "min_size": "0.01000000"
-          },
-          {
-            "id": "LTC",
-            "name": "Litecoin",
-            "min_size": "0.00000001"
-          },
-          {
-            "id": "GBP",
-            "name": "British Pound",
-            "min_size": "0.01000000"
-          },
-          {
-            "id": "USD",
-            "name": "United States Dollar",
-            "min_size": "0.01000000"
-          },
-          {
-            "id": "ETH",
-            "name": "Ether",
-            "min_size": "0.00000001"
-          }
-        ]
-        expected_currencies = [
-          {
-            "id": "BTC",
-            "name": "Bitcoin",
-            "min_size": Decimal("0.00000001")
-          },
-          {
-            "id": "EUR",
-            "name": "Euro",
-            "min_size": Decimal("0.01000000")
-          },
-          {
-            "id": "LTC",
-            "name": "Litecoin",
-            "min_size": Decimal("0.00000001")
-          },
-          {
-            "id": "GBP",
-            "name": "British Pound",
-            "min_size": Decimal("0.01000000")
-          },
-          {
-            "id": "USD",
-            "name": "United States Dollar",
-            "min_size": Decimal("0.01000000")
-          },
-          {
-            "id": "ETH",
-            "name": "Ether",
-            "min_size": Decimal("0.00000001")
-          }
-        ]
-        mock_get.return_value.aenter.json = CoroutineMock(
-            return_value=currencies)
-        self.init()
-        r = await self.client.get_currencies()
-        assert r == expected_currencies
+        async with gdax.trader.Trader() as client:
+            currencies = [
+                {
+                    "id": "BTC",
+                    "name": "Bitcoin",
+                    "min_size": "0.00000001"
+                },
+                {
+                    "id": "EUR",
+                    "name": "Euro",
+                    "min_size": "0.01000000"
+                },
+                {
+                    "id": "LTC",
+                    "name": "Litecoin",
+                    "min_size": "0.00000001"
+                },
+                {
+                    "id": "GBP",
+                    "name": "British Pound",
+                    "min_size": "0.01000000"
+                },
+                {
+                    "id": "USD",
+                    "name": "United States Dollar",
+                    "min_size": "0.01000000"
+                },
+                {
+                    "id": "ETH",
+                    "name": "Ether",
+                    "min_size": "0.00000001"
+                }
+            ]
+            expected_currencies = [
+                {
+                    "id": "BTC",
+                    "name": "Bitcoin",
+                    "min_size": Decimal("0.00000001")
+                },
+                {
+                    "id": "EUR",
+                    "name": "Euro",
+                    "min_size": Decimal("0.01000000")
+                },
+                {
+                    "id": "LTC",
+                    "name": "Litecoin",
+                    "min_size": Decimal("0.00000001")
+                },
+                {
+                    "id": "GBP",
+                    "name": "British Pound",
+                    "min_size": Decimal("0.01000000")
+                },
+                {
+                    "id": "USD",
+                    "name": "United States Dollar",
+                    "min_size": Decimal("0.01000000")
+                },
+                {
+                    "id": "ETH",
+                    "name": "Ether",
+                    "min_size": Decimal("0.00000001")
+                }
+            ]
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(
+                return_value=currencies)
+            r = await client.get_currencies()
+            assert r == expected_currencies
 
     async def test_get_time(self, mock_get):
-        r_time = {'iso': '2017-06-26T06:47:55.168Z', 'epoch': 1498459675.168}
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=r_time)
-        self.init()
-        r = await self.client.get_time()
-        assert r == r_time
+        async with gdax.trader.Trader() as client:
+            r_time = {'iso': '2017-06-26T06:47:55.168Z', 'epoch': 1498459675.168}
+            mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=r_time)
+            r = await client.get_time()
+            assert r == r_time
 
 
 @pytest.mark.usefixtures('event_loop')
 @pytest.mark.asyncio
 class TestPublicClientNotAuthenticated:
-    def init(self):
-        self.client = gdax.trader.Trader()
-
-    async def test_get_account(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_account()
-
-    async def test_get_account_history(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_account_history('account_id')
-
-    async def test_get_account_holds(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_account_holds('account_id')
-
-    async def test_buy(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.buy(product_id='product_id')
-
-    async def test_sell(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.sell(product_id='product_id')
-
-    async def test_cancel_order(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.cancel_order('order_id')
-
-    async def test_cancel_all(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.cancel_all('product_id')
-
-    async def test_get_order(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_order('order_id')
-
-    async def test_get_orders(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_orders()
-
-    async def test_get_fills(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_fills()
-
-    async def test_get_fundings(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_fundings('status')
-
-    async def test_repay_funding(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.repay_funding(Decimal('10'), 'USD')
-
-    async def test_margin_transfer(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.margin_transfer('id', 'deposit',
-                                              'USD', Decimal('10'))
-
-    async def test_get_position(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_position()
-
-    async def test_close_position(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.close_position()
-
-    async def test_deposit(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.deposit(Decimal('10'), 'USD', 'id')
-
-    async def test_coinbase_deposit(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.coinbase_deposit(Decimal('10'), 'USD', 'id')
-
-    async def test_withdraw(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.withdraw(Decimal('10'), 'USD', 'id')
-
-    async def test_coinbase_withdraw(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.coinbase_withdraw(Decimal('10'), 'USD', 'id')
-
-    async def test_crypto_withdraw(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.crypto_withdraw(Decimal('10'), 'USD', 'addr')
-
-    async def test_get_payment_methods(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_payment_methods()
-
-    async def test_get_coinbase_accounts(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_coinbase_accounts()
-
-    async def test_create_report(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.create_report('fills', 'start', 'end')
-
-    async def test_get_report(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_report('report_id')
-
-    async def test_get_trailing_volume(self):
-        self.init()
-        with pytest.raises(AssertionError):
-            await self.client.get_trailing_volume()
+    async def test_methods(self):
+        method_calls = [
+            ('get_account', (), {}),
+            ('get_account_history', ('account_id',), {}),
+            ('get_account_holds', ('account_id',), {}),
+            ('buy', (), {'product_id': 'product_id'}),
+            ('sell', (), {'product_id': 'product_id'}),
+            ('cancel_order', ('order_id',), {}),
+            ('cancel_all', ('product_id',), {}),
+            ('get_order', ('order_id',), {}),
+            ('get_orders', (), {}),
+            ('get_fills', (), {}),
+            ('get_fundings', ('status',), {}),
+            ('repay_funding', (Decimal('10'), 'USD'), {}),
+            ('margin_transfer', ('id', 'deposit', 'USD', Decimal('10')), {}),
+            ('get_position', (), {}),
+            ('close_position', (), {}),
+            ('deposit', (Decimal('10'), 'USD', 'id'), {}),
+            ('coinbase_deposit', (Decimal('10'), 'USD', 'id'), {}),
+            ('withdraw', (Decimal('10'), 'USD', 'id'), {}),
+            ('coinbase_withdraw', (Decimal('10'), 'USD', 'id'), {}),
+            ('crypto_withdraw', (Decimal('10'), 'USD', 'addr'), {}),
+            ('get_payment_methods', (), {}),
+            ('get_coinbase_accounts', (), {}),
+            ('create_report', ('fills', 'start', 'end'), {}),
+            ('get_report', ('report_id',), {}),
+            ('get_trailing_volume', (), {})
+        ]
+        async with gdax.trader.Trader() as client:
+            for method, args, kwargs in method_calls:
+                with pytest.raises(AssertionError):
+                    await getattr(client, method)(*args, **kwargs)
 
 
 def test_auth_headers(mocker):
@@ -727,36 +627,35 @@ def test_auth_headers(mocker):
 
 
 @pytest.mark.asyncio
-class TestAuthClient(object):
-    def init(self):
-        self.client = gdax.trader.Trader(
-            api_key='a',
-            api_secret=base64.b64encode(b'a' * 64),
-            passphrase='b',
-        )
+class TestAuthClient():
+    @staticmethod
+    def get_client():
+        return gdax.trader.Trader(
+            api_key='a', api_secret=base64.b64encode(b'a' * 64), passphrase='b')
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_account(self, mock_get):
-        mock_get.return_value.aenter.json = CoroutineMock(return_value={})
-        self.init()
-        r = await self.client.get_account()
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value={})
+        async with self.get_client() as client:
+            r = await client.get_account()
         assert type(r) is dict
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_account_history(self, mock_get):
-        mock_get.return_value.aenter.json = CoroutineMock(return_value={})
-        self.init()
-        r = await self.client.get_account_history('id')
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value={})
+        async with self.get_client() as client:
+            r = await client.get_account_history('id')
         assert type(r) is list
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_account_holds(self, mock_get):
-        mock_get.return_value.aenter.json = CoroutineMock(return_value={})
-        self.init()
-        r = await self.client.get_account_holds('id')
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value={})
+        async with self.get_client() as client:
+            r = await client.get_account_holds('id')
         assert type(r) is list
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_buy(self, mock_post):
         message = {
           "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
@@ -792,16 +691,16 @@ class TestAuthClient(object):
           "status": "pending",
           "settled": False
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.buy(product_id='product_id',
-                                  price=Decimal('250.52'),
-                                  size=Decimal('5.0'),
-                                  funds=Decimal('500'))
+        async with self.get_client() as client:
+            r = await client.buy(product_id='product_id',
+                                 price=Decimal('250.52'),
+                                 size=Decimal('5.0'),
+                                 funds=Decimal('500'))
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_sell(self, mock_post):
         message = {
           "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
@@ -837,25 +736,25 @@ class TestAuthClient(object):
           "status": "pending",
           "settled": False
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.sell(product_id='product_id',
-                                   price=Decimal('250.52'),
-                                   size=Decimal('5.0'),
-                                   funds=Decimal('500'))
+        async with self.get_client() as client:
+            r = await client.sell(product_id='product_id',
+                                  price=Decimal('250.52'),
+                                  size=Decimal('5.0'),
+                                  funds=Decimal('500'))
         assert r == expected_message
 
     @patch('aiohttp.ClientSession.delete',
-           new_callable=AsyncContextManagerMock)
+           new_callable=MagicMock)
     async def test_cancel_order(self, mock_delete):
-        mock_delete.return_value.aenter.json = CoroutineMock(return_value={})
-        self.init()
-        r = await self.client.cancel_order(order_id='order_id')
+        mock_delete.return_value.__aenter__.return_value.json = CoroutineMock(return_value={})
+        async with self.get_client() as client:
+            r = await client.cancel_order(order_id='order_id')
         assert type(r) is dict
 
     @patch('aiohttp.ClientSession.delete',
-           new_callable=AsyncContextManagerMock)
+           new_callable=MagicMock)
     async def test_cancel_all(self, mock_delete):
         message = [
             "144c6f8e-713f-4682-8435-5280fbe8b2b4",
@@ -864,13 +763,13 @@ class TestAuthClient(object):
             "dfc5ae27-cadb-4c0c-beef-8994936fde8a",
             "34fecfbf-de33-4273-b2c6-baf8e8948be4"
         ]
-        mock_delete.return_value.aenter.json = CoroutineMock(
+        mock_delete.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.cancel_all()
+        async with self.get_client() as client:
+            r = await client.cancel_all()
         assert r == message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_order(self, mock_get):
         message = {
             "id": "68e6a28f-ae28-4788-8d4f-5ab4e5e5ae08",
@@ -912,12 +811,12 @@ class TestAuthClient(object):
             "status": "done",
             "settled": False
         }
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_order('order_id')
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_order('order_id')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_orders(self, mock_get):
         message = [
             {
@@ -992,12 +891,12 @@ class TestAuthClient(object):
             }
         ]
 
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_orders()
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_orders()
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_fills(self, mock_get):
         message = [
             {
@@ -1027,14 +926,14 @@ class TestAuthClient(object):
                 "side": "buy"
             }
         ]
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_fills(
-            order_id='d50ec984-77a8-460a-b958-66f114b0de9b',
-            product_id='BTC-USD')
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_fills(
+                order_id='d50ec984-77a8-460a-b958-66f114b0de9b',
+                product_id='BTC-USD')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_fundings(self, mock_get):
         message = [
           {
@@ -1105,19 +1004,19 @@ class TestAuthClient(object):
           }
         ]
 
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_fundings('status')
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_fundings('status')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_repay_funding(self, mock_post):
-        mock_post.return_value.aenter.json = CoroutineMock(return_value={})
-        self.init()
-        r = await self.client.repay_funding(Decimal('10'), 'USD')
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(return_value={})
+        async with self.get_client() as client:
+            r = await client.repay_funding(Decimal('10'), 'USD')
         assert type(r) is dict
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_margin_transfer(self, mock_post):
         message = {
           "created_at": "2017-01-25T19:06:23.415126Z",
@@ -1149,14 +1048,14 @@ class TestAuthClient(object):
           "status": "completed",
           "nonce": 25
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.margin_transfer('id', 'deposit',
-                                              'USD', Decimal('2'))
+        async with self.get_client() as client:
+            r = await client.margin_transfer('id', 'deposit',
+                                             'USD', Decimal('2'))
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_position(self, mock_get):
         message = {
           "status": "active",
@@ -1252,19 +1151,19 @@ class TestAuthClient(object):
           },
           "product_id": "BTC-USD"
         }
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_position()
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_position()
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_close_position(self, mock_post):
-        mock_post.return_value.aenter.json = CoroutineMock(return_value={})
-        self.init()
-        r = await self.client.close_position()
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(return_value={})
+        async with self.get_client() as client:
+            r = await client.close_position()
         assert type(r) is dict
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_deposit(self, mock_post):
         message = {
             "amount": "10.00",
@@ -1276,13 +1175,13 @@ class TestAuthClient(object):
             "currency": "USD",
             "payment_method_id": "bc677162-d934-5f1a-968c-a496b1c1270b"
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.deposit(Decimal('10.0'), 'id', 'USD')
+        async with self.get_client() as client:
+            r = await client.deposit(Decimal('10.0'), 'id', 'USD')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_coinbase_deposit(self, mock_post):
         message = {
             "amount": "10.00",
@@ -1294,13 +1193,13 @@ class TestAuthClient(object):
             "currency": "BTC",
             "payment_method_id": "bc677162-d934-5f1a-968c-a496b1c1270b"
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.coinbase_deposit(Decimal('10'), 'BTC', 'id')
+        async with self.get_client() as client:
+            r = await client.coinbase_deposit(Decimal('10'), 'BTC', 'id')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_withdraw(self, mock_post):
         message = {
             "id": "593533d2-ff31-46e0-b22e-ca754147a96a",
@@ -1314,13 +1213,13 @@ class TestAuthClient(object):
             "currency": "USD",
             "payout_at": "2016-08-20T00:31:09Z"
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.withdraw(Decimal('10'), 'USD', 'id')
+        async with self.get_client() as client:
+            r = await client.withdraw(Decimal('10'), 'USD', 'id')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_coinbase_withdraw(self, mock_post):
         message = {
             "amount": "10.00",
@@ -1332,13 +1231,13 @@ class TestAuthClient(object):
             "currency": "BTC",
             "payment_method_id": "bc677162-d934-5f1a-968c-a496b1c1270b"
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.coinbase_withdraw(Decimal('10'), 'USD', 'id')
+        async with self.get_client() as client:
+            r = await client.coinbase_withdraw(Decimal('10'), 'USD', 'id')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_crypto_withdraw(self, mock_post):
         message = {
             "amount": "10.00",
@@ -1350,13 +1249,13 @@ class TestAuthClient(object):
             "currency": "BTC",
             "payment_method_id": "bc677162-d934-5f1a-968c-a496b1c1270b"
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.crypto_withdraw(Decimal('10'), 'USD', 'addr')
+        async with self.get_client() as client:
+            r = await client.crypto_withdraw(Decimal('10'), 'USD', 'addr')
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_payment_methods(self, mock_get):
         # NOTE: return values not converted
         message = [
@@ -1427,12 +1326,12 @@ class TestAuthClient(object):
                 }
             },
         ]
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_payment_methods()
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_payment_methods()
         assert r == message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_coinbase_accounts(self, mock_get):
         message = [
             {
@@ -1556,12 +1455,12 @@ class TestAuthClient(object):
                 }
             },
         ]
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_coinbase_accounts()
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_coinbase_accounts()
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.post', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.post', new_callable=MagicMock)
     async def test_create_report(self, mock_post):
         message = {
             "id": "0428b97b-bec1-429e-a94c-59232926778d",
@@ -1576,26 +1475,26 @@ class TestAuthClient(object):
                 "end_date": "2014-11-30T23:59:59.000Z"
             }
         }
-        mock_post.return_value.aenter.json = CoroutineMock(
+        mock_post.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.create_report('fills', 'start', 'end',
-                                            product_id='product_id',
-                                            report_format='csv',
-                                            email='email')
-        assert r == message
-        r = await self.client.create_report('account', 'start', 'end',
-                                            account_id='account_id')
-        assert r == message
+        async with self.get_client() as client:
+            r = await client.create_report('fills', 'start', 'end',
+                                           product_id='product_id',
+                                           report_format='csv',
+                                           email='email')
+            assert r == message
+            r = await client.create_report('account', 'start', 'end',
+                                           account_id='account_id')
+            assert r == message
 
-        with pytest.raises(AssertionError):
-            await self.client.create_report('fills', 'start', 'end')
-        with pytest.raises(AssertionError):
-            await self.client.create_report('account', 'start', 'end')
-        with pytest.raises(AssertionError):
-            await self.client.create_report('test', 'start', 'end')
+            with pytest.raises(AssertionError):
+                await client.create_report('fills', 'start', 'end')
+            with pytest.raises(AssertionError):
+                await client.create_report('account', 'start', 'end')
+            with pytest.raises(AssertionError):
+                await client.create_report('test', 'start', 'end')
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_report(self, mock_get):
         message = {
             "id": "0428b97b-bec1-429e-a94c-59232926778d",
@@ -1610,13 +1509,13 @@ class TestAuthClient(object):
                 "end_date": "2014-11-30T23:59:59.000Z"
             }
         }
-        mock_get.return_value.aenter.json = CoroutineMock(
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(
             return_value=message)
-        self.init()
-        r = await self.client.get_report('report_id')
+        async with self.get_client() as client:
+            r = await client.get_report('report_id')
         assert r == message
 
-    @patch('aiohttp.ClientSession.get', new_callable=AsyncContextManagerMock)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_get_trailing_volume(self, mock_get):
         message = [
             {
@@ -1646,16 +1545,18 @@ class TestAuthClient(object):
                 "recorded_at": "1973-11-29T00:05:02.123456Z"
             }
         ]
-        mock_get.return_value.aenter.json = CoroutineMock(return_value=message)
-        self.init()
-        r = await self.client.get_trailing_volume()
+        mock_get.return_value.__aenter__.return_value.json = CoroutineMock(return_value=message)
+        async with self.get_client() as client:
+            r = await client.get_trailing_volume()
         assert r == expected_message
 
-    @patch('aiohttp.ClientSession.get',
-           new_callable=AsyncContextManagerMockPagination)
+    @patch('aiohttp.ClientSession.get', new_callable=MagicMock)
     async def test_pagination(self, mock_get):
         pages = [[{'id': 1}], [{'id': 2}]]
-        mock_get.return_value.aenter.json = CoroutineMock(side_effect=pages)
-        self.init()
-        r = await self.client.get_account_history('id')
+        mock_get_aenter = mock_get.return_value.__aenter__.return_value
+        mock_get_aenter.json = CoroutineMock(side_effect=pages)
+        type(mock_get_aenter).headers = PropertyMock(
+            side_effect=[{'cb-after': 123}, {}])
+        async with self.get_client() as client:
+            r = await client.get_account_history('id')
         assert r == [{'id': 1}, {'id': 2}]

@@ -5,13 +5,13 @@ from decimal import Decimal
 
 import aiohttp
 import pytest
-from asynctest import patch, CoroutineMock, call
+from asynctest import patch, CoroutineMock, MagicMock, call
 
 import gdax
 import gdax.orderbook
 import gdax.utils
 
-from tests.helpers import AsyncContextManagerMock, generate_id
+from tests.helpers import generate_id
 
 
 id1 = generate_id()
@@ -113,18 +113,19 @@ asks1_internal = {
 
 @pytest.mark.asyncio
 @patch('aiohttp.ClientSession.ws_connect',
-       new_callable=AsyncContextManagerMock)
-class TestOrderbook(object):
+       new_callable=MagicMock)
+class TestOrderbook():
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_basic_init(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
+
         mock_book.return_value = _book()
 
         product_id = 'ETH-USD'
         product_ids = [product_id]
         async with gdax.orderbook.OrderBook(product_ids) as orderbook:
             msg = {'type': 'subscribe', 'product_ids': product_ids}
-            mock_connect.return_value.aenter.send_json.assert_called_with(msg)
+            mock_connect.return_value.__aenter__.return_value.send_json.assert_called_with(msg)
 
             mock_book.assert_called_with(level=3)
 
@@ -167,8 +168,8 @@ class TestOrderbook(object):
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_heartbeat(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
 
         mock_book.return_value = {'bids': [], 'asks': [], 'sequence': 1}
         message_expected = {
@@ -178,7 +179,7 @@ class TestOrderbook(object):
           "sequence": 2,
           "time": "2017-06-25T11:23:14.838000Z"
         }
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected),
         ]
         product_ids = ['ETH-USD']
@@ -187,14 +188,14 @@ class TestOrderbook(object):
             subscribe_msg = {'type': 'subscribe', 'product_ids': product_ids}
             heartbeat_msg = {'type': 'heartbeat', 'on': True}
             calls = [call(subscribe_msg), call(heartbeat_msg)]
-            mock_connect.return_value.aenter.send_json.assert_has_calls(calls)
+            mock_connect.return_value.__aenter__.return_value.send_json.assert_has_calls(calls)
 
             message = await orderbook.handle_message()
             assert message == message_expected
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_authentication(self, mock_book, mock_connect, mocker):
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         mock_book.return_value = {'bids': [], 'asks': [], 'sequence': 1}
         timestamp = '1493343391.076892'
         mocker.patch('time.time', return_value=timestamp)
@@ -214,12 +215,12 @@ class TestOrderbook(object):
                 'passphrase': 'b',
                 }
             assert orderbook._authenticated
-            mock_connect.return_value.aenter.send_json.assert_called_with(msg)
+            mock_connect.return_value.__aenter__.return_value.send_json.assert_called_with(msg)
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_basic_message(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         mock_book.return_value = {'bids': [], 'asks': [], 'sequence': 1}
         message_expected = {
               "type": "done",
@@ -232,7 +233,7 @@ class TestOrderbook(object):
               "sequence": 2,
               "time": "2017-06-25T11:23:14.775000Z"
             }
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected),
         ]
         async with gdax.orderbook.OrderBook('BTC-USD') as orderbook:
@@ -242,8 +243,8 @@ class TestOrderbook(object):
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_logfile(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         message_expected = {
               "type": "done",
               "side": "sell",
@@ -255,7 +256,7 @@ class TestOrderbook(object):
               "sequence": 2,
               "time": "2017-06-25T11:23:14.775000Z"
             }
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected)
         ]
         product_id = 'ETH-USD'
@@ -269,10 +270,9 @@ class TestOrderbook(object):
         calls = [call(f'B {product_id} '
                       f'{json.dumps(book, cls=gdax.utils.DecimalEncoder)}\n')]
 
-        with patch('aiofiles.open',
-                   new_callable=AsyncContextManagerMock) as mock_open:
-            mock_open.return_value.aenter.write = CoroutineMock()
-            mock_write = mock_open.return_value.aenter.write
+        with patch('aiofiles.open', new_callable=MagicMock) as mock_open:
+            mock_open.return_value.__aenter__.return_value.write = CoroutineMock()
+            mock_write = mock_open.return_value.__aenter__.return_value.write
             async with gdax.orderbook.OrderBook(
                     [product_id],
                     trade_log_file_path='trades.txt') as orderbook:
@@ -287,8 +287,8 @@ class TestOrderbook(object):
     async def test_orderbook_advanced(self, mock_book, mock_connect):
         product_id = 'BTC-USD'
         mock_book.return_value = _book()
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         messages_expected = [
             {  # ignored
               "type": "received",
@@ -341,7 +341,7 @@ class TestOrderbook(object):
               "time": "2017-06-25T11:23:14.792000Z"
             },
         ]
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected)
             for message_expected in messages_expected
         ]
@@ -410,8 +410,8 @@ class TestOrderbook(object):
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_error_message(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         mock_book.return_value = {'bids': [], 'asks': [], 'sequence': 1}
         messages_expected = [
           {
@@ -424,7 +424,7 @@ class TestOrderbook(object):
             'sequence': 2,
           },
         ]
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected)
             for message_expected in messages_expected
         ]
@@ -437,8 +437,8 @@ class TestOrderbook(object):
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_disconnect(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         mock_book.return_value = {'bids': [], 'asks': [], 'sequence': 1}
 
         messages_expected = [
@@ -466,7 +466,7 @@ class TestOrderbook(object):
               "time": "2017-06-25T11:23:14.775000Z"
             })
         ]
-        mock_connect.return_value.aenter.receive_str.side_effect = \
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = \
             messages_expected
         async with gdax.orderbook.OrderBook() as orderbook:
             message = await orderbook.handle_message()
@@ -480,8 +480,8 @@ class TestOrderbook(object):
 
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_out_of_order(self, mock_book, mock_connect):
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         mock_book.return_value = {'bids': [], 'asks': [], 'sequence': 1}
 
         messages_expected = [
@@ -519,7 +519,7 @@ class TestOrderbook(object):
               "time": "2017-06-25T11:23:14.775000Z"
             },
         ]
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected)
             for message_expected in messages_expected
         ]
@@ -536,8 +536,8 @@ class TestOrderbook(object):
     @patch('gdax.trader.Trader.get_product_order_book')
     async def test_orderbook_change(self, mock_book, mock_connect):
         product_id = 'BTC-USD'
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         messages_expected = [
             {
               "type": "change",
@@ -562,7 +562,7 @@ class TestOrderbook(object):
               "side": "sell"
             },
         ]
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected)
             for message_expected in messages_expected
         ]
@@ -602,8 +602,8 @@ class TestOrderbook(object):
     async def test_orderbook_done(self, mock_book, mock_connect):
         product_id = 'BTC-USD'
         mock_book.return_value = _book()
-        mock_connect.return_value.aenter.receive_str = CoroutineMock()
-        mock_connect.return_value.aenter.send_json = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.receive_str = CoroutineMock()
+        mock_connect.return_value.__aenter__.return_value.send_json = CoroutineMock()
         messages_expected = [
             {
               "type": "done",
@@ -639,7 +639,7 @@ class TestOrderbook(object):
               "time": "2017-06-25T11:23:15.937000Z"
             },
         ]
-        mock_connect.return_value.aenter.receive_str.side_effect = [
+        mock_connect.return_value.__aenter__.return_value.receive_str.side_effect = [
             json.dumps(message_expected)
             for message_expected in messages_expected
         ]

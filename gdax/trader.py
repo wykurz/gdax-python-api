@@ -9,15 +9,13 @@ from decimal import Decimal, InvalidOperation
 import json
 import logging
 import time
-
-import asyncio
 import aiohttp
 import async_timeout
-
+import asyncio
 import gdax.utils
 
 
-class Trader(object):
+class Trader():
     API_URL = "https://api.gdax.com"
 
     def __init__(self, product_id='ETH-USD', api_key=None, api_secret=None,
@@ -30,12 +28,18 @@ class Trader(object):
             self.passphrase = passphrase
         else:
             self.authenticated = False
-        self._clientsession = aiohttp.ClientSession()
-        self.session = self._clientsession.__enter__()
+        self._clientsession = None
+        self._session = None
         self.timeout_sec = timeout_sec
 
-    def __del__(self):
-        self.session = self._clientsession.__exit__(None, None, None)
+    async def __aenter__(self):
+        self._clientsession = aiohttp.ClientSession()
+        self._session = await self._clientsession.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        self._session = await self._clientsession.__aexit__(
+            exc_type, exc_value, traceback)
 
     def _auth_headers(self, path, method, body=''):
         timestamp = str(time.time())
@@ -102,7 +106,7 @@ class Trader(object):
                                                  method='GET')
                 else:
                     headers = None
-                async with self.session.get(self.API_URL + path_with_params,
+                async with self._session.get(self.API_URL + path_with_params,
                                             headers=headers,
                                             encoding='ascii') as response:
                     response.raise_for_status()
@@ -125,7 +129,7 @@ class Trader(object):
         headers = self._auth_headers(path, method='POST', body=json_data)
         path_url = self.API_URL + path
         with async_timeout.timeout(self.timeout_sec):
-            async with self.session.post(path_url,
+            async with self._session.post(path_url,
                                          headers=headers,
                                          data=json_data) as response:
                 res = await response.json()
@@ -139,7 +143,7 @@ class Trader(object):
         headers = self._auth_headers(path, method='DELETE', body=json_data)
         path_url = self.API_URL + path
         with async_timeout.timeout(self.timeout_sec):
-            async with self.session.delete(path_url,
+            async with self._session.delete(path_url,
                                            headers=headers,
                                            data=json_data) as response:
                 response.raise_for_status()
@@ -437,18 +441,18 @@ class Trader(object):
 
 
 async def main():  # pragma: no cover
-    trader = Trader(product_id='BTC-USD',
-                    api_key=None,
-                    api_secret=None,
-                    passphrase=None,)
-    res = await asyncio.gather(
-        trader.get_products(),
-        trader.get_product_ticker(),
-        trader.get_time(),
-        trader.get_product_historic_rates(),
-        # trader.buy(type='limit', size='0.01', price='2500.12'),
-    )
-    logging.info(res)
+    async with Trader(product_id='BTC-USD',
+                      api_key=None,
+                      api_secret=None,
+                      passphrase=None,) as trader:
+        res = await asyncio.gather(
+            trader.get_products(),
+            trader.get_product_ticker(),
+            trader.get_time(),
+            trader.get_product_historic_rates(),
+            # trader.buy(type='limit', size='0.01', price='2500.12'),
+        )
+        logging.info(res)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -4,15 +4,13 @@ See: https://docs.gdax.com/#websocket-feed.
 
 """
 
-import asyncio
 from decimal import Decimal
 import json
 import logging
 from operator import itemgetter
-
-from sortedcontainers import SortedDict
 import aiohttp
-
+from sortedcontainers import SortedDict
+import asyncio
 import gdax.trader
 import gdax.utils
 from gdax.websocket_feed_listener import WebSocketFeedListener
@@ -46,6 +44,8 @@ class OrderBook(WebSocketFeedListener):
     async def __aenter__(self):
         await super().__aenter__()
 
+        await asyncio.gather(*[trader.__aenter__() for trader in self.traders.values()])
+
         # get order book snapshot
         books = await asyncio.gather(
             *[trader.get_product_order_book(level=3)
@@ -75,6 +75,11 @@ class OrderBook(WebSocketFeedListener):
                 })
             self._sequences[product_id] = book['sequence']
         return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await asyncio.gather(*[trader.__aexit__(exc_type, exc_value, traceback)
+                               for trader in self.traders.values()])
+        await super().__aexit__(exc_type, exc_value, traceback)
 
     async def handle_message(self):
         try:
