@@ -107,8 +107,7 @@ class Trader():
                 else:
                     headers = None
                 async with self._session.get(self.API_URL + path_with_params,
-                                            headers=headers,
-                                            encoding='ascii') as response:
+                                             headers=headers) as response:
                     response.raise_for_status()
                     res = await response.json()
                     if pagination:
