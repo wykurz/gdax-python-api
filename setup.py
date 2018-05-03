@@ -12,7 +12,7 @@ setup(
     author_email='cskornel@gmail.com',
     install_requires=[
         'aiohttp>=2.2,<4',
-        'aiofiles==0.3',
+        'aiofiles>=0.3,<0.4',
         'async_timeout>=1.2,<3',
         'sortedcontainers>=1.5,<2',
     ],
