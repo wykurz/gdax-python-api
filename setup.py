@@ -20,12 +20,12 @@ setup(
     include_package_data=True,
     platforms='any',
     tests_require=[
-        'pytest',
+        'asynctest',
         'codecov',
+        'pytest',
+        'pytestcov',
         'pytest-asyncio',
-        'pytest-cov',
         'pytest-mock',
-        'asynctest'
     ],
     classifiers=[
         'Programming Language :: Python :: 3 :: Only',
