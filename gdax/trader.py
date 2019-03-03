@@ -16,7 +16,7 @@ import gdax.utils
 
 
 class Trader():
-    API_URL = "https://api.gdax.com"
+    API_URL = 'http://localhost:8990'  # "https://api.gdax.com"
 
     def __init__(self, product_id='ETH-USD', api_key=None, api_secret=None,
                  passphrase=None, timeout_sec=10):

@@ -51,7 +51,7 @@ class WebSocketFeedListener(ABC):
     async def _init(self):
         self._ws_session = aiohttp.ClientSession()
         self._ws_connect = self._ws_session.ws_connect(
-            'wss://ws-feed.gdax.com')
+            'ws://localhost:8989')  # 'wss://ws-feed.gdax.com')
         self._ws = await self._ws_connect.__aenter__()
 
         # subscribe
